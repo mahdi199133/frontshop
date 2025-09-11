@@ -6,9 +6,12 @@ import CheckoutPage from './components/CheckoutPage';
 import DashboardPage from './components/DashboardPage';
 import ProductDetailPage from './components/ProductDetailPage';
 import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
 import { ToastContainer } from './components/Toast';
 import { Page, Product, CartItem, ToastMessage, User } from './types';
-import { fetchProductById, fetchProducts } from './services/mockApi';
+import { fetchProductById, fetchProducts } from './services/apiService';
+import * as authService from './services/authService';
+import { jwtDecode } from 'jwt-decode';
 
 
 const Spinner: React.FC = () => (
@@ -25,12 +28,7 @@ const App: React.FC = () => {
   const [detailedProduct, setDetailedProduct] = useState<Product | undefined>(undefined);
   const [isLoadingProduct, setIsLoadingProduct] = useState(false);
   
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    try {
-      const user = localStorage.getItem('currentUser');
-      return user ? JSON.parse(user) : null;
-    } catch (e) { return null; }
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [wishlist, setWishlist] = useState<number[]>(() => {
     try {
@@ -50,16 +48,39 @@ const App: React.FC = () => {
   });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Fetch all products on initial load
+  const fetchAndSetCurrentUser = useCallback(async () => {
+    // This is a placeholder. In a real app, you'd have an endpoint like /api/users/me/
+    // For now, we'll decode the token to get user info.
+    const token = authService.getAccessToken();
+    if (token) {
+      try {
+        const decoded: { user_id: string; username: string; } = jwtDecode(token);
+        // This is a mock user object based on token data
+        const user: User = { id: decoded.user_id.toString(), name: decoded.username, email: '' };
+        setCurrentUser(user);
+        const savedWishlist = localStorage.getItem(`wishlist_${user.id}`);
+        setWishlist(savedWishlist ? JSON.parse(savedWishlist) : []);
+      } catch (e) {
+        console.error("Invalid token:", e);
+        authService.clearTokens();
+      }
+    } else {
+      setCurrentUser(null);
+      setWishlist([]);
+    }
+  }, []);
+
+  // Fetch all products and check for logged in user on initial load
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadData = async () => {
       setIsLoadingProducts(true);
       const fetchedProducts = await fetchProducts();
       setProducts(fetchedProducts);
       setIsLoadingProducts(false);
     };
-    loadProducts();
-  }, []);
+    loadData();
+    fetchAndSetCurrentUser();
+  }, [fetchAndSetCurrentUser]);
 
   // Persist cart
   useEffect(() => {
@@ -108,7 +129,7 @@ const App: React.FC = () => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
   
-  const navigate = useCallback((targetPage: Page) => {
+  const navigate = useCallback((targetPage: Page, props?: any) => {
     // Protected routes
     if (targetPage === Page.Dashboard && !currentUser) {
       setPage(Page.Login);
@@ -152,19 +173,23 @@ const App: React.FC = () => {
       setCart([]);
   }, []);
 
-  const handleLogin = useCallback((email: string) => {
-      const user: User = { id: '123', name: 'علی رضایی', email: email };
-      setCurrentUser(user);
-      const savedWishlist = localStorage.getItem(`wishlist_${user.id}`);
-      setWishlist(savedWishlist ? JSON.parse(savedWishlist) : []);
-      addToast(`خوش آمدید، ${user.name}!`);
+  const handleLogin = useCallback(async (username: string, password: string) => {
+    try {
+      const tokens = await authService.loginUser(username, password);
+      authService.storeTokens(tokens);
+      await fetchAndSetCurrentUser(); // Fetch user info after login
+      addToast(`خوش آمدید!`);
       navigate(Page.Home);
-  }, [navigate]);
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Login failed', 'error');
+    }
+  }, [navigate, fetchAndSetCurrentUser]);
 
   const handleLogout = useCallback(() => {
-      addToast('با موفقیت خارج شدید.');
+      authService.clearTokens();
       setCurrentUser(null);
       setWishlist([]);
+      addToast('با موفقیت خارج شدید.');
       navigate(Page.Home);
   }, [navigate]);
 
@@ -192,13 +217,15 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (page) {
       case Page.Login:
-        return <LoginPage onLogin={handleLogin} />;
+        return <LoginPage onLogin={handleLogin} onNavigate={navigate} />;
+      case Page.Register:
+        return <RegisterPage onNavigate={navigate} addToast={addToast} />;
       case Page.Cart:
         return <CartPage cartItems={cart} updateQuantity={handleUpdateQuantity} removeFromCart={handleRemoveFromCart} setPage={navigate} addToast={addToast} />;
       case Page.Checkout:
         return <CheckoutPage setPage={navigate} clearCart={handleClearCart} />;
       case Page.Dashboard:
-        if (!currentUser) return <LoginPage onLogin={handleLogin} />;
+        if (!currentUser) return <LoginPage onLogin={handleLogin} onNavigate={navigate} />;
         return <DashboardPage currentUser={currentUser} onLogout={handleLogout} wishlist={wishlist} onToggleWishlist={handleToggleWishlist} onSelectProduct={handleSelectProduct} />;
       case Page.ProductDetail:
         if (isLoadingProduct) {
