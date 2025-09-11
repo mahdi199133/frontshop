@@ -17,9 +17,11 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class ProductSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    colors = ColorSerializer(many=True, read_only=True)
-    sizes = SizeSerializer(many=True, read_only=True)
+    # To match the simple string format of the mock API
+    category = serializers.StringRelatedField(read_only=True)
+    # To return a list of strings, e.g., ["آبی", "مشکی"]
+    colors = serializers.SerializerMethodField()
+    sizes = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -31,10 +33,16 @@ class ProductSerializer(serializers.ModelSerializer):
             'category',
             'colors',
             'sizes',
-            'image_url', # Renaming from imageUrl to match DRF conventions
+            'image_url',
             'rating',
             'review_count'
         ]
+
+    def get_colors(self, obj):
+        return [color.name for color in obj.colors.all()]
+
+    def get_sizes(self, obj):
+        return [size.name for size in obj.sizes.all()]
 
     def to_representation(self, instance):
         """
