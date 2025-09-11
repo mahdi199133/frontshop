@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -141,3 +142,13 @@ CORS_ALLOW_ALL_ORIGINS = True # For development only
 # Media files (User-uploaded content)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media')
+
+# Jazzmin settings
+JAZZMIN_SETTINGS = {
+    "site_title": "پنل مدیریت فروشگاه",
+    "site_header": "فروشگاه شلوار",
+    "site_brand": "فروشگاه شلوار",
+    "welcome_sign": "به پنل مدیریت فروشگاه شلوار خوش آمدید",
+    "copyright": "Trouser Store Ltd.",
+    "language_chooser": True,
+}
