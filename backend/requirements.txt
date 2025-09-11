@@ -2,4 +2,3 @@ django==5.2.6
 djangorestframework==3.16.1
 django-cors-headers==4.8.0
 Pillow==10.4.0
-django-jazzmin==2.6.0
