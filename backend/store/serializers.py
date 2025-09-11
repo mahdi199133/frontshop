@@ -23,6 +23,8 @@ class ProductSerializer(serializers.ModelSerializer):
     colors = serializers.SerializerMethodField()
     sizes = serializers.SerializerMethodField()
 
+    image = serializers.ImageField(max_length=None, use_url=True)
+
     class Meta:
         model = Product
         fields = [
@@ -33,7 +35,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'category',
             'colors',
             'sizes',
-            'image_url',
+            'image',
             'rating',
             'review_count'
         ]
@@ -46,14 +48,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """
-        Convert `image_url` to `imageUrl` to match the frontend's expected camelCase format.
+        Convert field names to camelCase to match the frontend's expected format.
         """
         representation = super().to_representation(instance)
-        representation['imageUrl'] = representation.pop('image_url')
+
+        # Rename 'image' to 'imageUrl'
+        # DRF's ImageField with use_url=True returns a full URL path
+        representation['imageUrl'] = representation.pop('image')
+
+        # Rename 'review_count' to 'reviewCount'
         representation['reviewCount'] = representation.pop('review_count')
-        # DRF DecimalField serializes to string. Convert to float or int for frontend if needed.
-        # For now, string is fine as JS can parse it.
-        # representation['price'] = float(representation['price'])
+
         return representation
 
 # --- Serializers for Discount Logic ---

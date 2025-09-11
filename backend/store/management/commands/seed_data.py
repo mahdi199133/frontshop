@@ -34,7 +34,7 @@ class Command(BaseCommand):
                         'description': product_data.get('description'),
                         'price': product_data.get('price'),
                         'category': category,
-                        'image_url': product_data.get('imageUrl'),
+                        # 'image' field will be left blank, to be uploaded via admin
                         'rating': product_data.get('rating'),
                         'review_count': product_data.get('reviewCount'),
                     }
