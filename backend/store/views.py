@@ -6,14 +6,14 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
-from .models import Product, Discount, Wishlist, Order, OrderItem, Customer
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from .models import Product, Discount, Wishlist, Order, OrderItem, Customer, Review
 from .filters import ProductFilter
 from .serializers import (
     ProductSerializer, DiscountApplySerializer, DiscountSerializer,
-    WishlistSerializer, OrderSerializer, OrderItemSerializer
+    WishlistSerializer, OrderSerializer, OrderItemSerializer, ReviewSerializer
 )
 
 class ProductViewSet(ReadOnlyModelViewSet):
@@ -42,6 +42,25 @@ class ProductViewSet(ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(recommended_products, many=True)
         return Response(serializer.data)
+
+
+class ReviewViewSet(ModelViewSet):
+    """
+    API endpoint for viewing and creating product reviews.
+    """
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        # Only return reviews for the specific product from the URL
+        return Review.objects.filter(product_id=self.kwargs['product_pk'])
+
+    def get_serializer_context(self):
+        # Pass product_pk and request to the serializer
+        return {
+            'product_id': self.kwargs['product_pk'],
+            'request': self.request
+        }
 
 class WishlistViewSet(viewsets.ModelViewSet):
     """

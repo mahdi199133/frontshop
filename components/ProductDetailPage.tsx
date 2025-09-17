@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Product } from '../types';
-import { fetchProductById } from '../services/productService';
+import { Product, Review } from '../types';
+import { fetchProductById, fetchReviews, postReview } from '../services/productService';
 import { StarIcon, PlusIcon, MinusIcon, HeartIcon } from './Icons';
+import ReviewList from './ReviewList';
+import AddReviewForm from './AddReviewForm';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -30,6 +32,7 @@ const colorToHex = (colorName: string): string => {
 const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ addToast }) => {
   const { productId } = useParams<{ productId: string }>();
   const [product, setProduct] = useState<Product | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,8 +41,18 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ addToast }) => {
   const [quantity, setQuantity] = useState(1);
 
   const { addToCart, toggleWishlist, isProductInWishlist } = useData();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, token } = useAuth();
   const navigate = useNavigate();
+
+  const loadReviews = async () => {
+      if (!productId) return;
+      try {
+          const fetchedReviews = await fetchReviews(parseInt(productId, 10));
+          setReviews(fetchedReviews);
+      } catch (e) {
+          console.error("Failed to load reviews", e);
+      }
+  };
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -64,6 +77,20 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ addToast }) => {
     };
     loadProduct();
   }, [productId]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [productId]);
+
+  const handleReviewSubmit = async (rating: number, comment: string) => {
+    if (!productId || !token) {
+        throw new Error("You must be logged in to post a review.");
+    }
+    await postReview(parseInt(productId, 10), { rating, comment }, token);
+    addToast('نظر شما با موفقیت ثبت شد!', 'success');
+    // Refresh reviews after submitting
+    loadReviews();
+  };
 
   const handleAddToCartClick = async () => {
     if (product && selectedSize && selectedColor) {
@@ -214,6 +241,19 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ addToast }) => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-16 pt-10 border-t border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">نظرات مشتریان</h2>
+            <div className="space-y-12">
+                {isLoggedIn && (
+                    <div>
+                        <AddReviewForm onSubmit={handleReviewSubmit} />
+                    </div>
+                )}
+                <ReviewList reviews={reviews} />
+            </div>
         </div>
       </div>
     </div>

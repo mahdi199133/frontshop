@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Category, Color, Size, Discount, Wishlist, Order, OrderItem
+from .models import Product, Category, Color, Size, Discount, Wishlist, Order, OrderItem, Review
 
 class ColorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -106,3 +106,23 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total_price(self, order):
         return sum(item.unit_price * item.quantity for item in order.items.all())
+
+# --- Serializer for Reviews ---
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'user', 'rating', 'comment', 'created_at']
+        read_only_fields = ['user']
+
+    def create(self, validated_data):
+        product_id = self.context['product_id']
+        user = self.context['request'].user
+
+        # Check if the user has already reviewed this product
+        if Review.objects.filter(product_id=product_id, user=user).exists():
+            raise serializers.ValidationError('شما قبلاً برای این محصول نظر ثبت کرده‌اید.')
+
+        return Review.objects.create(product_id=product_id, user=user, **validated_data)

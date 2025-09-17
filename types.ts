@@ -65,3 +65,10 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'info';
 }
 
+export interface Review {
+  id: number;
+  user: string; // username
+  rating: number;
+  comment: string;
+  created_at: string;
+}

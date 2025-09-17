@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام دسته بندی")
@@ -146,3 +147,23 @@ class Wishlist(models.Model):
 
     def __str__(self):
         return f"لیست علاقه‌مندی‌های {self.user.username}"
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name="محصول")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews', verbose_name="کاربر")
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        verbose_name="امتیاز"
+    )
+    comment = models.TextField(verbose_name="متن نظر")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ثبت")
+
+    class Meta:
+        verbose_name = "نظر"
+        verbose_name_plural = "نظرات"
+        # A user can only write one review per product
+        unique_together = ('product', 'user')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"نظر {self.user.username} برای {self.product.name}"
