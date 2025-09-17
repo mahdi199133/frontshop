@@ -5,6 +5,7 @@ import { ToastContainer } from './components/Toast';
 import { ToastMessage } from './types';
 import { useAuth } from './context/AuthContext';
 import { useData } from './context/DataContext';
+import { useSiteConfig } from './context/SiteConfigContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy load page components for code splitting
@@ -24,6 +25,7 @@ const LoadingSpinner: React.FC = () => (
 const App: React.FC = () => {
   const { isLoggedIn, isLoading: isAuthLoading } = useAuth();
   const { cart, isLoading: isDataLoading } = useData();
+  const { config } = useSiteConfig();
   
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const navigate = useNavigate();
@@ -83,7 +85,7 @@ const App: React.FC = () => {
       </main>
       <footer className="bg-white border-t">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-500">
-            <p>&copy; ۱۴۰۳ - تمام حقوق برای فروشگاه شلوارکده محفوظ است.</p>
+            <p>&copy; {new Date().getFullYear()} - تمام حقوق برای {config?.store_name || 'فروشگاه شما'} محفوظ است.</p>
         </div>
       </footer>
       <ToastContainer toasts={toasts} onDismiss={removeToast} />

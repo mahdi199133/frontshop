@@ -72,3 +72,14 @@ export interface Review {
   comment: string;
   created_at: string;
 }
+
+export interface SiteConfiguration {
+    store_name: string;
+    logo: string | null;
+    contact_email: string;
+    phone_number: string;
+    address: string;
+    instagram_url: string;
+    telegram_url: string;
+    primary_color: string;
+}

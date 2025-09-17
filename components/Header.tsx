@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCartIcon, UserIcon, SearchIcon } from './Icons';
+import { useSiteConfig } from '../context/SiteConfigContext';
 
 interface HeaderProps {
     cartItemCount: number;
@@ -9,7 +10,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ cartItemCount, isLoggedIn }) => {
-    
+    const { config, loading } = useSiteConfig();
     const userDestination = isLoggedIn ? "/dashboard" : "/login";
 
     return (
@@ -18,8 +19,14 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, isLoggedIn }) => {
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
                     <div className="flex-shrink-0">
-                        <Link to="/" className="text-2xl font-bold text-gray-800">
-                            شلوارکده
+                        <Link to="/" className="text-2xl font-bold text-gray-800 flex items-center gap-x-2">
+                            {loading ? (
+                                <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+                            ) : config?.logo ? (
+                                <img src={config.logo} alt={config.store_name} className="h-10"/>
+                            ) : (
+                                <span>{config?.store_name || 'فروشگاه'}</span>
+                            )}
                         </Link>
                     </div>
 

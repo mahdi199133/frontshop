@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
     # Local apps
     "store.apps.StoreConfig",
+    "site_config.apps.SiteConfigConfig",
 ]
 
 # Required for django-allauth
