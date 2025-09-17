@@ -83,3 +83,19 @@ export interface SiteConfiguration {
     telegram_url: string;
     primary_color: string;
 }
+
+export interface BlogCategory {
+    name: string;
+    slug: string;
+}
+
+export interface BlogPost {
+    id: number;
+    title: string;
+    slug: string;
+    author: string;
+    category: BlogCategory;
+    content: string;
+    image_url: string;
+    created_at: string;
+}

@@ -15,6 +15,8 @@ const CheckoutPage = React.lazy(() => import('./components/CheckoutPage'));
 const DashboardPage = React.lazy(() => import('./components/DashboardPage'));
 const ProductDetailPage = React.lazy(() => import('./components/ProductDetailPage'));
 const LoginPage = React.lazy(() => import('./components/LoginPage'));
+const BlogListPage = React.lazy(() => import('./components/BlogListPage'));
+const BlogPostPage = React.lazy(() => import('./components/BlogPostPage'));
 
 const LoadingSpinner: React.FC = () => (
     <div className="flex justify-center items-center h-screen">
@@ -80,6 +82,8 @@ const App: React.FC = () => {
                         />
                     </ProtectedRoute>
                 } />
+                <Route path="/blog" element={<BlogListPage />} />
+                <Route path="/blog/:slug" element={<BlogPostPage />} />
             </Routes>
         </Suspense>
       </main>
