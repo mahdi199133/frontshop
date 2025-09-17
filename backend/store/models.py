@@ -96,7 +96,7 @@ class Discount(models.Model):
         (DISCOUNT_TYPE_FIXED, 'مبلغ ثابت'),
     ]
 
-    code = models.CharField(max_length=50, unique=True, verbose_name="کد تخفیف")
+    code = models.CharField(max_length=50, unique=True, db_index=True, verbose_name="کد تخفیف")
     description = models.TextField(verbose_name="توضیحات")
     discount_type = models.CharField(max_length=1, choices=DISCOUNT_TYPE_CHOICES, verbose_name="نوع تخفیف")
     value = models.DecimalField(max_digits=10, decimal_places=0, verbose_name="مقدار")
@@ -133,3 +133,16 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} عدد از {self.product.name}"
+
+class Wishlist(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wishlist', verbose_name="کاربر")
+    products = models.ManyToManyField(Product, blank=True, related_name='wishlisted_by', verbose_name="محصولات مورد علاقه")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
+
+    class Meta:
+        verbose_name = "لیست علاقه‌مندی‌ها"
+        verbose_name_plural = "لیست‌های علاقه‌مندی‌"
+
+    def __str__(self):
+        return f"لیست علاقه‌مندی‌های {self.user.username}"

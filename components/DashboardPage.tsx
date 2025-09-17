@@ -1,40 +1,36 @@
 
-import React, { useState, useEffect } from 'react';
-import { Product, User } from '../types';
-import { fetchProductsByIds } from '../services/mockApi';
+import React, { useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import ProductCard from './ProductCard';
+import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 
 type DashboardTab = 'profile' | 'orders' | 'addresses' | 'wishlist';
 
 interface DashboardPageProps {
-  currentUser: User;
-  wishlist: number[];
-  onLogout: () => void;
-  onToggleWishlist: (productId: number) => void;
   onSelectProduct: (productId: number) => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, wishlist, onLogout, onToggleWishlist, onSelectProduct }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectProduct }) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('orders');
-  const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
-  const [isLoadingWishlist, setIsLoadingWishlist] = useState(false);
+  const { user, logout } = useAuth();
+  const { wishlist, toggleWishlist, isProductInWishlist, isLoading: isDataLoading } = useData();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (activeTab === 'wishlist' && wishlist.length > 0) {
-      const loadWishlistProducts = async () => {
-        setIsLoadingWishlist(true);
-        const products = await fetchProductsByIds(wishlist);
-        setWishlistProducts(products);
-        setIsLoadingWishlist(false);
-      };
-      loadWishlistProducts();
-    }
-  }, [activeTab, wishlist]);
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   const orders = [
     { id: '12345', date: '۱۴۰۳/۰۵/۰۱', total: '۱,۵۷۰,۰۰۰ تومان', status: 'تحویل شده' },
     { id: '12346', date: '۱۴۰۳/۰۵/۱۰', total: '۸۵۰,۰۰۰ تومان', status: 'در حال پردازش' },
   ];
+
+  if (!user) {
+    // This should not happen if ProtectedRoute is used, but as a fallback:
+    return null;
+  }
 
   return (
     <div className="bg-gray-50">
@@ -43,9 +39,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, wishlist, on
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <aside className="md:col-span-1">
             <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-              <img src={`https://i.pravatar.cc/150?u=${currentUser.email}`} alt="User avatar" className="w-24 h-24 rounded-full mx-auto mb-4" />
-              <h2 className="text-xl font-semibold">{currentUser.name}</h2>
-              <p className="text-sm text-gray-500">{currentUser.email}</p>
+              <img src={`https://i.pravatar.cc/150?u=${user.email}`} alt="User avatar" className="w-24 h-24 rounded-full mx-auto mb-4" />
+              <h2 className="text-xl font-semibold">{user.username}</h2>
+              <p className="text-sm text-gray-500">{user.email}</p>
             </div>
             <nav className="bg-white p-4 rounded-lg shadow-sm mt-6">
               <ul className="space-y-1">
@@ -53,7 +49,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, wishlist, on
                 <li><button onClick={() => setActiveTab('wishlist')} className={`w-full text-right px-4 py-2 rounded-md ${activeTab === 'wishlist' ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'}`}>علاقه‌مندی‌ها</button></li>
                 <li><button onClick={() => setActiveTab('profile')} className={`w-full text-right px-4 py-2 rounded-md ${activeTab === 'profile' ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'}`}>پروفایل</button></li>
                 <li><button onClick={() => setActiveTab('addresses')} className={`w-full text-right px-4 py-2 rounded-md ${activeTab === 'addresses' ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'}`}>آدرس‌ها</button></li>
-                <li><button onClick={onLogout} className="w-full text-right px-4 py-2 rounded-md text-red-600 hover:bg-red-50">خروج از حساب</button></li>
+                <li><button onClick={handleLogout} className="w-full text-right px-4 py-2 rounded-md text-red-600 hover:bg-red-50">خروج از حساب</button></li>
               </ul>
             </nav>
           </aside>
@@ -94,16 +90,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser, wishlist, on
               {activeTab === 'wishlist' && (
                 <div>
                   <h3 className="text-2xl font-semibold mb-6">لیست علاقه‌مندی‌ها</h3>
-                  {isLoadingWishlist ? (<p>در حال بارگذاری...</p>) :
-                   wishlistProducts.length > 0 ? (
+                  {isDataLoading ? (<p>در حال بارگذاری...</p>) :
+                   wishlist && wishlist.products.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {wishlistProducts.map(product => (
+                      {wishlist.products.map(product => (
                         <ProductCard 
                           key={product.id}
                           product={product}
                           onViewDetails={onSelectProduct}
-                          onToggleWishlist={onToggleWishlist}
-                          isInWishlist={true}
+                          onToggleWishlist={toggleWishlist}
+                          isInWishlist={isProductInWishlist(product.id)}
                         />
                       ))}
                     </div>

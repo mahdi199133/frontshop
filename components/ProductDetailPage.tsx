@@ -1,15 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Product } from '../types';
+import { fetchProductById } from '../services/productService';
 import { StarIcon, PlusIcon, MinusIcon, HeartIcon } from './Icons';
+import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 
 interface ProductDetailPageProps {
-  product: Product;
-  onAddToCart: (product: Product, size: string, color: string, quantity: number) => void;
-  onBack: () => void;
-  onToggleWishlist: (productId: number) => void;
-  isInWishlist: boolean;
+  addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
+
+const Spinner: React.FC = () => (
+    <div className="flex justify-center items-center py-32">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+    </div>
+);
 
 // Helper function to map Persian color names to hex codes for styling
 const colorToHex = (colorName: string): string => {
@@ -21,21 +27,99 @@ const colorToHex = (colorName: string): string => {
     return colorMap[colorName] || '#cccccc';
 };
 
-const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onAddToCart, onBack, onToggleWishlist, isInWishlist }) => {
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
-  const [selectedColor, setSelectedColor] = useState(product.colors[0]);
+const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ addToast }) => {
+  const { productId } = useParams<{ productId: string }>();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
 
-  const handleAddToCartClick = () => {
-    onAddToCart(product, selectedSize, selectedColor, quantity);
+  const { addToCart, toggleWishlist, isProductInWishlist } = useData();
+  const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadProduct = async () => {
+      if (!productId) return;
+      setIsLoading(true);
+      setError(null);
+      try {
+        const fetchedProduct = await fetchProductById(parseInt(productId, 10));
+        if (fetchedProduct) {
+          setProduct(fetchedProduct);
+          setSelectedSize(fetchedProduct.sizes[0]);
+          setSelectedColor(fetchedProduct.colors[0]);
+        } else {
+          setError('محصول یافت نشد.');
+        }
+      } catch (e) {
+        setError('خطا در دریافت اطلاعات محصول.');
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProduct();
+  }, [productId]);
+
+  const handleAddToCartClick = async () => {
+    if (product && selectedSize && selectedColor) {
+      try {
+        await addToCart(product, selectedSize, selectedColor, quantity);
+        addToast(`${product.name} به سبد خرید اضافه شد!`, 'success');
+      } catch (err) {
+        addToast('خطا در افزودن به سبد خرید.', 'error');
+      }
+    }
   };
+
+  const handleToggleWishlistClick = async () => {
+      if (!isLoggedIn) {
+          addToast('برای افزودن به علاقه‌مندی‌ها ابتدا وارد شوید.', 'info');
+          navigate('/login');
+          return;
+      }
+      if (product) {
+          const wasInWishlist = isProductInWishlist(product.id);
+          try {
+            await toggleWishlist(product.id);
+            addToast(wasInWishlist ? 'محصول از علاقه‌مندی‌ها حذف شد.' : 'محصول به علاقه‌مندی‌ها اضافه شد.', 'info');
+          } catch(err) {
+            addToast('خطا در بروزرسانی لیست علاقه‌مندی‌ها.', 'error');
+          }
+      }
+  }
+
+  if (isLoading) {
+    return <Spinner />;
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h1 className="text-2xl font-bold text-red-600">{error}</h1>
+        <Link to="/" className="mt-8 inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-md hover:bg-indigo-700">
+          بازگشت به فروشگاه
+        </Link>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return null; // Or a "Product not found" component
+  }
+
+  const isInWishlist = isProductInWishlist(product.id);
 
   return (
     <div className="bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <button onClick={onBack} className="text-sm font-medium text-indigo-600 hover:text-indigo-500 mb-8">
+        <Link to="/" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 mb-8">
           &rarr; بازگشت به همه محصولات
-        </button>
+        </Link>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-10">
           {/* Image gallery */}
           <div className="aspect-w-1 aspect-h-1 rounded-lg overflow-hidden">
@@ -122,7 +206,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onAddToC
                 </button>
                  <button
                     type="button"
-                    onClick={() => onToggleWishlist(product.id)}
+                    onClick={handleToggleWishlistClick}
                     className={`p-3 rounded-md border transition-colors duration-200 ${isInWishlist ? 'bg-red-50 border-red-200 text-red-500' : 'bg-white border-gray-300 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-500'}`}
                   >
                     <HeartIcon className="w-6 h-6" fill={isInWishlist ? 'currentColor' : 'none'} />

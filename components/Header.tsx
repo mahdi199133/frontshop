@@ -1,23 +1,16 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ShoppingCartIcon, UserIcon, SearchIcon } from './Icons';
-import { Page } from '../types';
 
 interface HeaderProps {
     cartItemCount: number;
-    setPage: (page: Page) => void;
     isLoggedIn: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ cartItemCount, setPage, isLoggedIn }) => {
+const Header: React.FC<HeaderProps> = ({ cartItemCount, isLoggedIn }) => {
     
-    const handleUserIconClick = () => {
-        if (isLoggedIn) {
-            setPage(Page.Dashboard);
-        } else {
-            setPage(Page.Login);
-        }
-    };
+    const userDestination = isLoggedIn ? "/dashboard" : "/login";
 
     return (
         <header className="bg-white shadow-md sticky top-0 z-40">
@@ -25,9 +18,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, setPage, isLoggedIn }) =
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
                     <div className="flex-shrink-0">
-                        <a href="#" onClick={() => setPage(Page.Home)} className="text-2xl font-bold text-gray-800">
+                        <Link to="/" className="text-2xl font-bold text-gray-800">
                             شلوارکده
-                        </a>
+                        </Link>
                     </div>
 
                     {/* Search Bar */}
@@ -46,18 +39,18 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, setPage, isLoggedIn }) =
 
                     {/* Icons */}
                     <div className="flex items-center space-s-4">
-                        <button onClick={handleUserIconClick} className="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <Link to={userDestination} className="p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             <UserIcon className="h-6 w-6" />
-                        </button>
+                        </Link>
                         <div className="h-6 border-e border-gray-300 mx-2"></div>
-                        <button onClick={() => setPage(Page.Cart)} className="relative p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <Link to="/cart" className="relative p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             <ShoppingCartIcon className="h-6 w-6" />
                             {cartItemCount > 0 && (
                                 <span className="absolute -top-1 -end-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                                     {cartItemCount}
                                 </span>
                             )}
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>
