@@ -24,13 +24,13 @@ const HomePage: React.FC<HomePageProps> = ({ onSelectProduct, addToast }) => {
     price: 1000000,
     search: '',
   });
-  const [sortBy, setSortBy] = useState('popularity');
+  const [sortBy, setSortBy] = useState('popularity'); // Default sort by popularity
 
-  const loadProducts = useCallback(async (pageNum: number) => {
+  const loadProducts = useCallback(async (params: { [key: string]: any }, isNewSearch: boolean) => {
     setStatus('loading');
     try {
-      const data = await fetchProductsPaginated(pageNum);
-      setProducts(prev => pageNum === 1 ? data.results : [...prev, ...data.results]);
+      const data = await fetchProductsPaginated(params);
+      setProducts(prev => isNewSearch ? data.results : [...prev, ...data.results]);
       setHasNextPage(data.next !== null);
       setStatus('succeeded');
     } catch (err) {
@@ -40,14 +40,41 @@ const HomePage: React.FC<HomePageProps> = ({ onSelectProduct, addToast }) => {
     }
   }, []);
 
+  // Effect for initial load and subsequent filter/sort changes
   useEffect(() => {
-    loadProducts(1);
-  }, [loadProducts]);
+    const orderingMap: { [key: string]: string } = {
+        'popularity': '-rating',
+        'price_asc': 'price',
+        'price_desc': '-price'
+    };
+
+    const params = {
+        page: 1,
+        category: filters.category,
+        price__lte: filters.price,
+        name__icontains: filters.search,
+        ordering: orderingMap[sortBy]
+    };
+    setPage(1); // Reset page to 1 on any new filter/sort
+    loadProducts(params, true);
+  }, [filters, sortBy, loadProducts]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;
+    const orderingMap: { [key: string]: string } = {
+        'popularity': '-rating',
+        'price_asc': 'price',
+        'price_desc': '-price'
+    };
+    const params = {
+        page: nextPage,
+        category: filters.category,
+        price__lte: filters.price,
+        name__icontains: filters.search,
+        ordering: orderingMap[sortBy]
+    };
     setPage(nextPage);
-    loadProducts(nextPage);
+    loadProducts(params, false);
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -55,30 +82,15 @@ const HomePage: React.FC<HomePageProps> = ({ onSelectProduct, addToast }) => {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const filteredAndSortedProducts = useMemo(() => {
-    // NOTE: This filtering is now client-side only on the loaded products.
-    // For a full solution, filtering should be done via API query parameters.
-    let result = products
-      .filter(p => filters.category === 'all' || p.category === filters.category)
-      .filter(p => p.price <= filters.price)
-      .filter(p => p.name.toLowerCase().includes(filters.search.toLowerCase()));
+  // This is no longer needed, as filtering is done by the backend.
+  // const filteredAndSortedProducts = useMemo(() => ...);
 
-    switch (sortBy) {
-      case 'price_asc':
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case 'price_desc':
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case 'popularity':
-      default:
-        result.sort((a, b) => b.reviewCount - a.reviewCount);
-        break;
-    }
-    return result;
-  }, [products, filters, sortBy]);
-
-  const categories = useMemo(() => ['all', ...Array.from(new Set(products.map(p => p.category)))], [products]);
+  const categories = useMemo(() => {
+    // This could be fetched from a dedicated categories API endpoint in the future
+    // For now, we derive it from the loaded products, but it won't be exhaustive.
+    const uniqueCategories = Array.from(new Set(products.map(p => p.category)));
+    return ['all', ...uniqueCategories];
+  }, [products]);
 
   const isLoadingFirstTime = status === 'loading' && page === 1;
   const isLoadingMore = status === 'loading' && page > 1;
@@ -135,7 +147,7 @@ const HomePage: React.FC<HomePageProps> = ({ onSelectProduct, addToast }) => {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredAndSortedProducts.map(product => (
+                {products.map(product => (
                   <ProductCard
                       key={product.id}
                       product={product}

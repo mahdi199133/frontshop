@@ -4,3 +4,4 @@ django-cors-headers==4.8.0
 dj-rest-auth==6.0.0
 django-allauth==0.63.3
 requests==2.32.3
+django-filter==24.3

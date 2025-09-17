@@ -2,9 +2,16 @@ import { Product, PaginatedResponse } from '../types';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-export const fetchProductsPaginated = async (page: number = 1): Promise<PaginatedResponse<Product>> => {
+export const fetchProductsPaginated = async (params: { [key: string]: any }): Promise<PaginatedResponse<Product>> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products/?page=${page}`);
+    const query = new URLSearchParams();
+    for (const key in params) {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '' && params[key] !== 'all') {
+            query.append(key, params[key]);
+        }
+    }
+
+    const response = await fetch(`${API_BASE_URL}/products/?${query.toString()}`);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }

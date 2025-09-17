@@ -7,28 +7,25 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from rest_framework.pagination import PageNumberPagination
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from .models import Product, Discount, Wishlist, Order, OrderItem, Customer
+from .filters import ProductFilter
 from .serializers import (
     ProductSerializer, DiscountApplySerializer, DiscountSerializer,
     WishlistSerializer, OrderSerializer, OrderItemSerializer
 )
 
-class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = 'page_size'
-    max_page_size = 100
-
 class ProductViewSet(ReadOnlyModelViewSet):
     """
     API endpoint that allows products to be viewed.
     Provides `list` and `retrieve` actions.
+    Supports filtering by category, price, and name, and ordering by price and rating.
     """
     queryset = Product.objects.select_related('category').prefetch_related('colors', 'sizes').all()
     serializer_class = ProductSerializer
-    pagination_class = StandardResultsSetPagination
+    filterset_class = ProductFilter
+    ordering_fields = ['price', 'rating']
 
     @action(detail=True, methods=['get'])
     def recommendations(self, request, pk=None):
