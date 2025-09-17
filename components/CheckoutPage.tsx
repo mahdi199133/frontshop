@@ -1,14 +1,11 @@
 
 import React, { useState } from 'react';
-import { Page } from '../types';
+import { Link } from 'react-router-dom';
 import { CheckCircleIcon } from './Icons';
+import { useData } from '../context/DataContext';
 
-interface CheckoutPageProps {
-  setPage: (page: Page) => void;
-  clearCart: () => void;
-}
-
-const CheckoutPage: React.FC<CheckoutPageProps> = ({ setPage, clearCart }) => {
+const CheckoutPage: React.FC = () => {
+  const { clearCart } = useData();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -42,9 +39,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ setPage, clearCart }) => {
               <CheckCircleIcon className="w-24 h-24 text-green-500 mx-auto mb-6"/>
               <h1 className="text-3xl font-bold text-gray-800 mb-4">سفارش شما با موفقیت ثبت شد!</h1>
               <p className="text-gray-600 mb-8">از خرید شما سپاسگزاریم. جزئیات سفارش به ایمیل شما ارسال شد.</p>
-              <button onClick={() => setPage(Page.Home)} className="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-md hover:bg-indigo-700">
+              <Link to="/" className="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-md hover:bg-indigo-700">
                   بازگشت به صفحه اصلی
-              </button>
+              </Link>
           </div>
       )
   }

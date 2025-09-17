@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام دسته بندی")
@@ -96,7 +97,7 @@ class Discount(models.Model):
         (DISCOUNT_TYPE_FIXED, 'مبلغ ثابت'),
     ]
 
-    code = models.CharField(max_length=50, unique=True, verbose_name="کد تخفیف")
+    code = models.CharField(max_length=50, unique=True, db_index=True, verbose_name="کد تخفیف")
     description = models.TextField(verbose_name="توضیحات")
     discount_type = models.CharField(max_length=1, choices=DISCOUNT_TYPE_CHOICES, verbose_name="نوع تخفیف")
     value = models.DecimalField(max_digits=10, decimal_places=0, verbose_name="مقدار")
@@ -133,3 +134,36 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} عدد از {self.product.name}"
+
+class Wishlist(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wishlist', verbose_name="کاربر")
+    products = models.ManyToManyField(Product, blank=True, related_name='wishlisted_by', verbose_name="محصولات مورد علاقه")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
+
+    class Meta:
+        verbose_name = "لیست علاقه‌مندی‌ها"
+        verbose_name_plural = "لیست‌های علاقه‌مندی‌"
+
+    def __str__(self):
+        return f"لیست علاقه‌مندی‌های {self.user.username}"
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name="محصول")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews', verbose_name="کاربر")
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        verbose_name="امتیاز"
+    )
+    comment = models.TextField(verbose_name="متن نظر")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ثبت")
+
+    class Meta:
+        verbose_name = "نظر"
+        verbose_name_plural = "نظرات"
+        # A user can only write one review per product
+        unique_together = ('product', 'user')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"نظر {self.user.username} برای {self.product.name}"
