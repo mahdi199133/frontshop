@@ -22,6 +22,8 @@ from django.views.generic import TemplateView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include('store.urls')),
+    path('api/auth/', include('dj_rest_auth.urls')),
+    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
     # Catch-all for the React app
     re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),
 ]

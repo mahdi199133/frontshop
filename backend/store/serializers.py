@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Category, Color, Size, Discount
+from .models import Product, Category, Color, Size, Discount, Wishlist, Order, OrderItem, Review
 
 class ColorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -70,3 +70,59 @@ class CartItemValidationSerializer(serializers.Serializer):
 class DiscountApplySerializer(serializers.Serializer):
     code = serializers.CharField(max_length=50)
     cart = CartItemValidationSerializer(many=True)
+
+# --- Serializers for Wishlist ---
+
+class WishlistSerializer(serializers.ModelSerializer):
+    products = ProductSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Wishlist
+        fields = ['id', 'user', 'products', 'updated_at']
+        read_only_fields = ['user']
+
+# --- Serializers for Cart/Order ---
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), source='product', write_only=True
+    )
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'product_id', 'quantity', 'unit_price', 'selected_size', 'selected_color']
+        read_only_fields = ['unit_price']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = ['id', 'customer', 'placed_at', 'payment_status', 'discount', 'items', 'total_price']
+        read_only_fields = ['customer', 'placed_at', 'payment_status', 'discount']
+
+    def get_total_price(self, order):
+        return sum(item.unit_price * item.quantity for item in order.items.all())
+
+# --- Serializer for Reviews ---
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'user', 'rating', 'comment', 'created_at']
+        read_only_fields = ['user']
+
+    def create(self, validated_data):
+        product_id = self.context['product_id']
+        user = self.context['request'].user
+
+        # Check if the user has already reviewed this product
+        if Review.objects.filter(product_id=product_id, user=user).exists():
+            raise serializers.ValidationError('شما قبلاً برای این محصول نظر ثبت کرده‌اید.')
+
+        return Review.objects.create(product_id=product_id, user=user, **validated_data)
