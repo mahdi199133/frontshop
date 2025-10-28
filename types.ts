@@ -37,4 +37,5 @@ export enum Page {
   Dashboard = 'DASHBOARD',
   ProductDetail = 'PRODUCT_DETAIL',
   Login = 'LOGIN',
+  Register = 'REGISTER',
 }

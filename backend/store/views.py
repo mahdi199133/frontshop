@@ -1,15 +1,17 @@
 import decimal
 from django.utils import timezone
 import decimal
+from django.contrib.auth.models import User
 from django.utils import timezone
+from rest_framework import generics, permissions, status
 from rest_framework.decorators import action
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import ReadOnlyModelViewSet
 from .models import Product, Discount
-from .serializers import ProductSerializer, DiscountApplySerializer, DiscountSerializer
+from .serializers import (ProductSerializer, DiscountApplySerializer,
+                          DiscountSerializer, UserSerializer)
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -24,6 +26,22 @@ class ProductViewSet(ReadOnlyModelViewSet):
     queryset = Product.objects.select_related('category').prefetch_related('colors', 'sizes').all()
     serializer_class = ProductSerializer
     pagination_class = StandardResultsSetPagination
+
+    @action(detail=False, methods=['get'])
+    def by_ids(self, request):
+        ids = request.query_params.getlist('ids')
+        if not ids:
+            return Response([], status=status.HTTP_200_OK)
+
+        # Convert ids to integers
+        try:
+            product_ids = [int(id) for id in ids]
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid ID list provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        queryset = self.get_queryset().filter(id__in=product_ids)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def recommendations(self, request, pk=None):
@@ -110,3 +128,12 @@ class ApplyDiscountView(APIView):
             'discount_amount': discount_amount,
             'final_price': final_price,
         }, status=status.HTTP_200_OK)
+
+
+class RegistrationView(generics.CreateAPIView):
+    """
+    API endpoint for user registration.
+    """
+    queryset = User.objects.all()
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = UserSerializer

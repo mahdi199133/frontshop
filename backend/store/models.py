@@ -38,7 +38,7 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='products', verbose_name="دسته بندی")
     colors = models.ManyToManyField(Color, related_name='products', verbose_name="رنگ ها")
     sizes = models.ManyToManyField(Size, related_name='products', verbose_name="سایز ها")
-    image_url = models.URLField(max_length=1024, verbose_name="آدرس تصویر")
+    image = models.ImageField(upload_to='products/', null=True, blank=True, verbose_name="تصویر محصول")
     rating = models.FloatField(default=0, verbose_name="امتیاز")
     review_count = models.PositiveIntegerField(default=0, verbose_name="تعداد نظرات")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
